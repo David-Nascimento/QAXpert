@@ -1,6 +1,6 @@
 require 'rspec'
 require 'json'
-require_relative '../lib/qaxpert/coverage_analyzer'
+require_relative '../lib/qaxpert/support/coverage_analyzer'
 
 describe Qaxpert::CoverageAnalyzer do
   let(:fake_path) { 'spec/fake_coverage.json' }

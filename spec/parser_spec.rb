@@ -1,5 +1,5 @@
 require 'rspec'
-require_relative '../lib/qaxpert/parser'
+require_relative '../lib/qaxpert/support/parser'
 
 describe Qaxpert::Parser do
   describe '.extract_context' do

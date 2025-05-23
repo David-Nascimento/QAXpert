@@ -1,6 +1,6 @@
 require 'rspec'
 require 'json'
-require_relative '../lib/qaxpert/jira_client'
+require_relative '../lib/qaxpert/Integrations/jira_client'
 
 module Qaxpert
   module Integrations

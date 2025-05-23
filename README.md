@@ -1,5 +1,6 @@
 **Qualidade contínua com IA para times ágeis.**
-![QAXpert Banner](https://raw.githubusercontent.com/David-Nascimento/qaxpert/main/diagrama_qaxpert.png)
+
+![QAXpert Banner](https://github.com/David-Nascimento/QAXpert/blob/QA-123-login-com-erro/img/diagrama_qaxpert.png)
 
 [![Gem Version](https://img.shields.io/gem/v/qaxpert.svg)](https://rubygems.org/gems/QAXpert)
 [![RSpec Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/seuusuario/qaxpert/actions)

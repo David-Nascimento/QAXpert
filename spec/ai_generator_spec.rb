@@ -1,5 +1,5 @@
 require 'rspec'
-require_relative '../lib/qaxpert/ai_generator'
+require_relative '../lib/qaxpert/Integrations/or'
 
 module Qaxpert
   class GeminiClient

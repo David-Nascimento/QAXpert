@@ -1,5 +1,5 @@
 require 'rspec'
-require_relative '../lib/qaxpert/quality_scorer'
+require_relative '../lib/qaxpert/Utils/t/quality_scorer'
 
 describe Qaxpert::QualityScorer do
   describe '.score_feature' do

@@ -1,7 +1,7 @@
 require 'rspec'
 require 'fileutils'
 require_relative '../lib/qaxpert/cli'
-require_relative '../lib/qaxpert/utils'
+require_relative '../lib/qaxpert/Utils/utils'
 
 module Qaxpert
   class GeminiClient
