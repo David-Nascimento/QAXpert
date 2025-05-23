@@ -1,6 +1,7 @@
 module Qaxpert
   class CLI
     def self.run(args)
+      Dotenv.load
       if args[0] == 'analyze' && args[1]
         path = args[1]
         puts "📂 Analisando arquivo: #{path}"
@@ -11,7 +12,6 @@ module Qaxpert
         suggestion = AIGenerator.generate_scenarios(context)
 
         puts("\n🧪 Sugestões de cenários BDD:\n")
-        puts suggestion
 
         Utils.save_feature_file(path, suggestion)
       else

@@ -1,5 +1,5 @@
 Gem::Specification.new do |spec|
-  spec.name          = "qaxpert"
+  spec.name          = "QAXpert"
   spec.version       = "0.1.0"
   spec.authors       = ["David Nascimento"]
   spec.email         = ["david@example.com"]
@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.description   = "Gera sugestões de cenários BDD com base no código-fonte Ruby"
   spec.license       = "MIT"
 
-  spec.files         = Dir["lib/**/*.rb"] + ['bin/qaxpert']
   spec.executables   = ['qaxpert']
+  spec.files         = Dir['lib/**/*.rb'] + ['bin/qaxpert']
   spec.require_paths = ['lib']
 
   spec.add_runtime_dependency 'dotenv'

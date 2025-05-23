@@ -1,6 +1,6 @@
 module Qaxpert
   class GeminiClient
-    GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+    GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
     def self.call(prompt)
       api_key = ENV['GEMINI_API_KEY']
