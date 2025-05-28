@@ -1,4 +1,4 @@
-module Qaxpert
+module QAxpert
   class GitAnalyzer
     def self.changed_files
       result = `git diff --name-only HEAD~1 HEAD`

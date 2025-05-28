@@ -1,4 +1,4 @@
-module Qaxpert
+module QAxpert
   class QualityScorer
     def self.score_feature(content)
       score = 0.0

@@ -1,4 +1,4 @@
-module Qaxpert
+module QAxpert
   class GitUtils
     def self.current_issue_key
       branch = `git rev-parse --abbrev-ref HEAD`.strip

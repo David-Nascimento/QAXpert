@@ -1,4 +1,4 @@
-module Qaxpert
+module QAxpert
   class CLI
     def self.run(args)
       if args[0] == 'analyze' && args[1]

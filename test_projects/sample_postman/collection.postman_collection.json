@@ -1,0 +1,31 @@
+{
+  "info": {
+    "name": "Login API Test",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login Success",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "https://example.com/api/login",
+          "protocol": "https",
+          "host": ["example", "com"],
+          "path": ["api", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"user\": \"admin\", \"pass\": \"123\" }"
+        }
+      },
+      "response": []
+    }
+  ]
+}

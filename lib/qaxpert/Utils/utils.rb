@@ -1,4 +1,4 @@
-module Qaxpert
+module QAxpert
   class Utils
     def self.save_feature_file(source_path, content)
       filename = File.basename(source_path, File.extname(source_path)) + ".feature"

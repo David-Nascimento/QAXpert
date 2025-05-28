@@ -1,0 +1,137 @@
+Ok, entendi. Você me forneceu um diff de um projeto Ruby chamado "Qaxpert", focado em qualidade contínua com IA para times ágeis. As mudanças recentes envolvem principalmente a reestruturação dos diretórios e arquivos, com a separação das funcionalidades em subdiretórios como `AI`, `Integrations`, `Utils` e `support`. Além disso, há alterações nos arquivos `spec` para refletir essa nova estrutura.
+
+Embora não haja nenhum script Robot Framework diretamente no diff fornecido, posso te dar sugestões gerais sobre como aplicar boas práticas de automação de testes com Robot Framework, considerando o contexto do projeto Qaxpert:
+
+**1. Clareza e Estrutura dos Testes:**
+
+*   **Camadas de Abstração:**
+    *   Implemente camadas de abstração bem definidas. Crie *Resource Files* para agrupar keywords relacionadas a componentes específicos da aplicação (ex: `login_page.resource`, `product_page.resource`).
+    *   Keywords em Resource Files devem ser concisas e focadas em uma única ação.
+    *   Use *Variables Files* para centralizar dados de teste (usuários, senhas, URLs).
+
+*   **Nomenclatura Descritiva:**
+    *   Use nomes claros e descritivos para Test Suites, Test Cases e Keywords.  Evite abreviações excessivas e nomes genéricos. Ex:
+        *   Em vez de:  `TC1`, `Test1`
+        *   Use:  `Login com Sucesso`, `Validar Produto no Carrinho`
+    *   A nomenclatura deve refletir o comportamento que está sendo testado.
+
+*   **Estrutura de Test Cases:**
+    *   Use a estrutura `GIVEN-WHEN-THEN` (Dado-Quando-Então) para organizar seus testes, promovendo clareza e legibilidade.
+    *   `GIVEN` (Dado): Define o estado inicial do sistema.
+    *   `WHEN` (Quando): Descreve a ação que o usuário realiza.
+    *   `THEN` (Então):  Especifica o resultado esperado.
+
+    ```robotframework
+    ***Test Case***
+    Login com Sucesso
+        [Documentation]  Verifica o login com credenciais válidas.
+        GIVEN Que o usuário está na página de login
+        WHEN O usuário digita um usuário e senha válidos
+        AND Clica no botão "Entrar"
+        THEN O usuário é redirecionado para a página principal
+        AND  A mensagem de boas-vindas é exibida
+    ```
+
+*   **Comentários e Documentação:**
+    *   Documente seus testes com comentários claros e concisos. Explique o propósito do teste, pré-condições e resultados esperados.
+    *   Use a tag `[Documentation]` para fornecer informações adicionais sobre Test Suites, Test Cases e Keywords.
+
+**2. Nomenclatura e Escopo:**
+
+*   **Variáveis:**
+    *   Use prefixos para indicar o escopo das variáveis:
+        *   `G_`: Variável global
+        *   `S_`: Variável de Suite
+        *   `T_`: Variável de Test Case
+        *   `L_`: Variável local (dentro de uma Keyword)
+
+    *   Exemplo:  `${G_BROWSER}`, `${S_URL_LOGIN}`, `${T_USUARIO}`
+
+*   **Keywords:**
+    *   Nomeie as keywords de forma a indicar claramente sua função e o componente que manipulam.
+    *   Evite nomes de keywords muito genéricos que possam causar confusão.
+    *   Use verbos no imperativo para descrever a ação da keyword: `Clicar Botão`, `Preencher Campo`, `Validar Mensagem`.
+
+**3. Boas Práticas de QA Automatizado:**
+
+*   **Testes Independentes:**
+    *   Cada teste deve ser independente dos demais. Isso significa que um teste não deve depender do resultado de outro.
+    *   Use `Setup` e `Teardown` para garantir que o ambiente de teste esteja em um estado conhecido antes e depois de cada teste.
+
+*   **Testes Automatizados Robustos:**
+    *   Utilize seletores (locators) de elementos da interface do usuário que sejam confiáveis e resistentes a mudanças.  Evite usar seletores baseados em posições ou IDs dinâmicos.
+    *   Implemente tratamentos de exceção para lidar com erros inesperados.
+    *   Use `Wait Until...` keywords para aguardar que elementos da interface estejam visíveis ou em um estado específico antes de interagir com eles.
+
+*   **Reutilização de Código:**
+    *   Evite duplicação de código.  Crie keywords para encapsular ações comuns e reutilize-as em vários testes.
+    *   Use bibliotecas externas (como `SeleniumLibrary`, `RequestsLibrary`, `DatabaseLibrary`) para estender as funcionalidades do Robot Framework.
+
+*   **Manutenção e Evolução:**
+    *   Mantenha seus testes automatizados atualizados.  Quando a aplicação muda, seus testes também devem ser atualizados para refletir essas mudanças.
+    *   Revise seus testes regularmente para garantir que eles ainda sejam relevantes e eficazes.
+    *   Integre seus testes automatizados ao seu pipeline de CI/CD para garantir que eles sejam executados automaticamente em cada build.
+
+*   **Reporting e Logging:**
+    *   Aproveite os recursos de reporting do Robot Framework para gerar relatórios de testes detalhados e fáceis de entender.
+    *   Use logging para registrar informações importantes durante a execução dos testes, facilitando a identificação e resolução de problemas.
+
+**Considerações Adicionais para Qaxpert:**
+
+*   **Integração com IA:** Considerando que o Qaxpert usa IA, você pode criar keywords para validar os resultados gerados pelos componentes de IA. Por exemplo, se o `ai_generator.rb` gera código, seus testes poderiam validar a sintaxe e o comportamento desse código gerado.
+*   **Cobertura de Testes:** Como o Qaxpert inclui um `coverage_analyzer.rb`, use os dados de cobertura para direcionar seus esforços de automação. Concentre-se em testar as áreas do código que têm baixa cobertura.
+*   **Testes de Integração:** Teste a integração entre os diferentes componentes do Qaxpert (ex: integração entre o `gemini_client.rb` e o `jira_client.rb`).
+
+**Exemplo Prático (Login):**
+
+```robotframework
+***Settings***
+Library           SeleniumLibrary
+Resource          login_page.resource
+Variables         variables.py
+
+***Test Cases***
+Login com Credenciais Válidas
+    [Documentation]  Verifica o login com um usuário e senha válidos.
+    Open Browser To Login Page
+    Preencher Formulario Login  ${VALID_USERNAME}  ${VALID_PASSWORD}
+    Submeter Formulario Login
+    Verificar Login Bem Sucedido
+
+***Keywords***
+Open Browser To Login Page
+    Open Browser  ${LOGIN_URL}  ${BROWSER}
+
+Preencher Formulario Login
+    [Arguments]  ${username}  ${password}
+    Input Text  ${LOGIN_USERNAME_FIELD}  ${username}
+    Input Text  ${LOGIN_PASSWORD_FIELD}  ${password}
+
+Submeter Formulario Login
+    Click Button  ${LOGIN_BUTTON}
+
+Verificar Login Bem Sucedido
+    Wait Until Page Contains Element  ${WELCOME_MESSAGE}
+    Page Should Contain  Bem-vindo, ${VALID_USERNAME}
+```
+
+**`login_page.resource` (exemplo):**
+
+```robotframework
+***Variables***
+${LOGIN_USERNAME_FIELD}  id:username
+${LOGIN_PASSWORD_FIELD}  id:password
+${LOGIN_BUTTON}         id:login-button
+${WELCOME_MESSAGE}      id:welcome-message
+```
+
+**`variables.py` (exemplo):**
+
+```python
+VALID_USERNAME = "usuario_valido"
+VALID_PASSWORD = "senha_valida"
+LOGIN_URL = "http://exemplo.com/login"
+BROWSER = "chrome"
+```
+
+Lembre-se de que essas são sugestões gerais. A melhor forma de otimizar seus testes Robot Framework é adaptá-las às necessidades específicas do seu projeto Qaxpert. A análise contínua da qualidade dos testes, a refatoração e o feedback da equipe são cruciais para manter a automação de testes eficaz.

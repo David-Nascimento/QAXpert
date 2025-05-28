@@ -1,4 +1,4 @@
-module Qaxpert
+module QAxpert
   class CoverageAnalyzer
     def self.load_coverage(file_path = 'coverage/.resultset.json')
       return "❌ Arquivo de cobertura não encontrado." unless File.exist?(file_path)

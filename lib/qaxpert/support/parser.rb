@@ -1,4 +1,4 @@
-module Qaxpert
+module QAxpert
   class Parser
     def self.read_file(path)
       File.read(path)

@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+require_relative '../lib/qaxpert'
+
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: analyze_by_type --type=TYPE [--path=PATH] [--output=DIR] [--ai=PROVIDER]"
+
+  opts.on("--type=TYPE", "Tipo de framework de teste (java, robot, karate, postman, rest)") { |v| options[:type] = v.to_sym }
+  opts.on("--path=PATH", "Caminho do projeto (default: diretório atual)") { |v| options[:path] = v }
+  opts.on("--output=DIR", "Diretório de saída (default: ./qaxpert_output)") { |v| options[:output] = v }
+  opts.on("--ai=PROVIDER", "Provedor de IA (openai ou gemini)") { |v| options[:ai] = v.to_sym }
+end.parse!
+
+abort("❌ Você precisa informar o tipo com --type") unless options[:type]
+
+QAXpert.run(
+  repo_path: options[:path] || Dir.pwd,
+  lang: options[:type],
+  output_path: options[:output] || './qaxpert_output',
+  ai_provider: options[:ai] || :openai
+)

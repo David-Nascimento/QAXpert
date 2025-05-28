@@ -91,6 +91,45 @@ qaxpert score features/login.feature
 bundle exec rspec
 ```
 
+## Estrutura do Projeto
+```
+qaxpert/
+├── bin/
+│   └── qaxpert                # CLI executável
+├── lib/
+│   └── qaxpert/
+│       ├── core/
+│       │   ├── analyzer.rb          # Lógica de análise comum
+│       │   ├── git_history.rb       # Interpretação de commits/mudanças
+│       │   ├── llm_client.rb        # Cliente para OpenAI/Gemini
+│       │   ├── prompt_generator.rb  # Gera prompts baseados em linguagem
+│       │   └── reporter.rb          # Gera relatórios e saídas
+│       ├── languages/
+│       │   ├── ruby.rb              # Suporte à linguagem Ruby
+│       │   ├── java.rb              # Suporte à linguagem Java (JUnit, TestNG, Selenium, RestAssured)
+│       │   ├── flutter.rb           # Suporte à linguagem Flutter/Dart
+│       │   ├── robot.rb             # Suporte ao Robot Framework
+│       │   ├── karate.rb            # Suporte ao Karate DSL
+│       │   ├── postman.rb           # Suporte a coleções Postman
+│       │   └── rest.rb              # Suporte a testes REST (HTTParty, etc)
+│       └── qaxpert.rb              # Inicializador principal
+├── adapters/
+│   ├── java/                  # Scripts auxiliares (build, cobertura, etc.)
+│   │   └── run_tests.sh
+│   └── flutter/
+│       └── run_tests.sh
+├── test_projects/             # Projetos de teste para validação
+│   ├── sample_java_app/
+│   ├── sample_flutter_app/
+│   ├── sample_robot_tests/
+│   ├── sample_karate_tests/
+│   ├── sample_postman/
+│   └── sample_rest_api/
+├── README.md
+├── Gemfile
+└── qaxpert.gemspec
+```
+
 ---
 
 ## 📄 Licença
