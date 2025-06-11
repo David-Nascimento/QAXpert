@@ -2,8 +2,8 @@ require 'rake'
 require_relative './lib/qaxpert'
 
 namespace :qaxpert do
-  desc "Executa análise para o tipo de teste informado"
-  task :analyze, [:type, :path, :output, :ai] do |t, args|
+  desc 'Executa análise para o tipo de teste informado'
+  task :analyze, [:type, :path, :output, :ai] do |_t, args|
     args.with_defaults(
       path: Dir.pwd,
       output: './qaxpert_output',

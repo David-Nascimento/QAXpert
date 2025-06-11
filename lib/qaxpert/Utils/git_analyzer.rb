@@ -2,8 +2,7 @@ module QAxpert
   class GitAnalyzer
     def self.changed_files
       result = `git diff --name-only HEAD~1 HEAD`
-      files = result.lines.map(&:strip).select { |f| f.end_with?('.rb') && File.exist?(f) }
-      files
+      result.lines.map(&:strip).select { |f| f.end_with?('.rb') && File.exist?(f) }
     end
 
     def self.extract_changed_code(file)

@@ -2,9 +2,9 @@ module QAxpert
   class Parser
     def self.read_file(path)
       File.read(path)
-    rescue
+    rescue StandardError
       warn "❌ Não foi possível ler o arquivo: #{path}"
-      ""
+      ''
     end
 
     def self.extract_context(code)
@@ -22,7 +22,7 @@ module QAxpert
       end
 
       actions = lines.select { |l| l.match(/authenticate|redirect_to|render|params\[:.*\]/) }
-      summary << "Ações detectadas:" unless actions.empty?
+      summary << 'Ações detectadas:' unless actions.empty?
       actions.each do |line|
         summary << "  - #{line.strip}"
       end

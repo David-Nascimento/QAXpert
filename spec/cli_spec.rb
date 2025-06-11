@@ -5,7 +5,7 @@ require_relative '../lib/qaxpert/Utils/utils'
 
 module Qaxpert
   class GeminiClient
-    def self.call(prompt)
+    def self.call(_prompt)
       "Feature: Cenário gerado\n\n  Scenario: Execução via CLI\n    Given faço algo\n    When executo algo\n    Then vejo resultado"
     end
   end
@@ -25,9 +25,9 @@ describe Qaxpert::CLI do
   end
 
   it 'executa CLI e salva feature gerada' do
-    expect {
+    expect do
       Qaxpert::CLI.run(['analyze', temp_file])
-    }.to output(/📂 Analisando arquivo/).to_stdout
+    end.to output(/📂 Analisando arquivo/).to_stdout
 
     expect(File).to exist('features/tmp_test_file.feature')
     conteudo = File.read('features/tmp_test_file.feature')

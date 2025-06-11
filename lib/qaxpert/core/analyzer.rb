@@ -1,55 +1,72 @@
 module QAxpert
+  # Módulo Core
+  #
+  # Este módulo contém classes e funcionalidades centrais do QAxpert,
+  # incluindo a classe Analyzer, responsável por orquestrar o processo
+  # de análise de repositórios de código-fonte utilizando diferentes
+  # provedores de IA e linguagens suportadas.
+  #
+  # As principais responsabilidades deste módulo incluem:
+  # - Inicialização de componentes de análise conforme a linguagem selecionada.
+  # - Gerenciamento do fluxo de análise, incluindo suporte a dry-run.
+  # - Integração com provedores de IA para análise automatizada de código.
+  # - Propagação de opções como diff e verbose para os componentes internos.
+  #
+  # Classes principais:
+  # - Analyzer: Classe responsável por executar a análise de código-fonte.
   module Core
     class Analyzer
       def initialize(lang)
         @lang = lang
-        @language_handler = case lang
-                            when :ruby
-                              QAxpert::Languages::Ruby.new
-                            when :robot
-                              QAxpert::Languages::Robot.new
-                            when :karate
-                              QAxpert::Languages::Karate.new
-                            when :postman
-                              QAxpert::Languages::Postman.new
-                            when :rest
-                              QAxpert::Languages::Rest.new
-                            when :java
-                              QAxpert::Languages::Java.new
-                            when :flutter
-                              QAxpert::Languages::Flutter.new
-                            else
-                              raise "Linguagem #{lang} não suportada"
-                            end
       end
 
-      def analyze(repo_path, output_path, ai_provider)
-        puts "[QAXpert] Iniciando análise para linguagem: #{@lang.upcase}"
-        puts "[QAXpert] Projeto: #{repo_path}"
+      #
+      # @param repo_path   [String]
+      # @param output_path [String]
+      # @param ai_provider [Symbol]
+      # @param diff        [String]
+      # @param dry_run     [Boolean]
+      # @param verbose     [Boolean]
+      # @return [Array<String>]
+      #
+      def analyze(repo_path, output_path, ai_provider, diff: nil, dry_run: false, verbose: false)
+        puts "[QAxpert] Iniciando análise: #{repo_path} (#{@lang.upcase})"
+        FileUtils.mkdir_p(output_path)
 
-        # Verifica se diretório de saída existe
-        Dir.mkdir(output_path) unless Dir.exist?(output_path)
+        # Se dry_run, apenas lista arquivos e sai
+        if dry_run
+          patterns = QAxpert::LanguageHandler.load_config![@lang]['patterns']
+          discoverer = QAxpert::Services::FileDiscoverer.new(repo_path: repo_path, patterns: patterns)
+          files = discoverer.discover
+          puts 'Arquivos que seriam analisados (dry-run):'
+          files.each { |f| puts "  - #{f}" }
+          return files
+        end
 
-        # 1. Detectar arquivos de teste
-        test_files = @language_handler.analyze(repo_path)
-        puts "[QAXpert] Arquivos de teste detectados: #{test_files.count}"
+        ai_client = case ai_provider
+                    when :openai then QAxpert::Clients::OpenAIClient.new
+                    when :gemini then QAxpert::Clients::GeminiClient.new
+                    else raise "Provedor de IA não suportado: #{ai_provider.inspect}"
+                    end
 
-        # 2. Obter diff do repositório
-        diff = QAxpert::Core::GitHistory.extract_diff(repo_path)
-        context = "Código analisado com histórico de testes e mudanças."
+        handler = QAxpert::LanguageHandler.new(
+          lang: @lang,
+          repo_path: repo_path,
+          output_base: output_path,
+          ai_client: ai_client
+        )
 
-        # 3. Gerar prompt para LLM
-        prompt = @language_handler.generate_prompt_for_test(diff, context)
-        puts "\n[Prompt para IA]:\n#{prompt}"
+        # Se diff foi passado, define no handler
+        handler.diff_override = diff if diff
 
-        # 4. Salvar prompt para uso manual
-        File.write(File.join(output_path, "prompt.txt"), prompt)
-        puts "[QAXpert] Prompt salvo em: #{output_path}/prompt.txt"
+        # Ajustar handler para receber verbose (precisaremos propagar)
+        handler.verbose = true if handler.respond_to?(:verbose=) && handler.respond_to?(:verbose=) && verbose
 
-        # 5. Enviar para IA (OpenAI ou Gemini)
-        response = QAxpert::Core::LLMClient.call(prompt, provider: ai_provider)
-        File.write(File.join(output_path, "response.txt"), response)
-        puts "[QAXpert] Resposta da IA salva em: #{output_path}/response.txt"
+        files = handler.analyze_all
+
+        output_sub = handler.instance_variable_get(:@config)['output_sub']
+        puts "[QAxpert] Análise concluída (#{files.count} arquivos). Saída em: #{output_path}/#{output_sub}"
+        files
       end
     end
   end

@@ -3,7 +3,7 @@ require_relative '../lib/qaxpert/Integrations/or'
 
 module Qaxpert
   class GeminiClient
-    def self.call(prompt)
+    def self.call(_prompt)
       "Feature: Teste mockado
 
   Scenario: Login com sucesso

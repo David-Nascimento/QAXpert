@@ -1,0 +1,42 @@
+inherit_from: .rubocop_todo.yml
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 2.7
+  Exclude:
+    - 'bin/**/*'
+    - 'config/**/*'
+    - 'db/**/*'
+    - 'vendor/**/*'
+    - 'node_modules/**/*'
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/BlockLength:
+  Exclude:
+    - 'bin/**'
+    - 'lib/qaxpert/languages/language_handler.rb' # se for muito longo, ajuste depois
+
+# Desabilita cops que costumam gerar falsos positivos num projeto de CLI
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 25
+
+Metrics/AbcSize:
+  Max: 20
+
+Lint/UselessAssignment:
+  Enabled: true
+
+# Exemplo de configuração individual
+Gemspec/AddRuntimeDependency:
+  Enabled: true
+
+Layout/SpaceBeforeBrackets:
+  Enabled: true

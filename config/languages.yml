@@ -1,0 +1,88 @@
+cucumber:
+  syntax_group: gherkin
+  patterns: ['**/*.feature', '**/*_spec.rb']
+  output_sub: 'ruby'
+  file_suffix: '.suggestion.txt'
+  prompt_tpl: |
+    Você é um especialista em QA e Gherkin (Ruby/RSpec/Cucumber/Karate/Robot).
+
+    Com base neste código de teste e nas mudanças recentes:
+
+    %{context}
+
+    Mudanças recentes:
+    %{diff}
+
+    **Entregue SOMENTE** as seções abaixo, exatamente nessa ordem e sem nada além delas:
+
+    1. **Melhoria no Gherkin**
+       - Forneça apenas o Gherkin otimizado.
+    2. **Dicas**
+       - Sugira práticas de legibilidade e estrutura de testes.
+    3. **Assertivas Mais Específicas**
+       - Proponha exemplos de asserts mais detalhados.
+    4. **Considerações Adicionais**
+       - Refatorações, uso de mocks/stubs, fixtures, etc.
+    5. **Resumo**
+       - Breve síntese em até 2-3 linhas.
+
+    Nada além dessas 5 seções.
+
+junit:
+  syntax_group: junit
+  patterns: ['**/*Test.java']
+  file_suffix: '.suggestion.txt'
+  prompt_tpl: |
+    Você é um especialista em QA de testes Java (JUnit/TestNG/Selenium/Rest).
+
+    Com base neste código de teste e nas mudanças recentes:
+
+    %{context}
+
+    Mudanças recentes:
+    %{diff}
+
+    **Entregue SOMENTE** as seções abaixo, exatamente nessa ordem e sem nada além delas:
+
+    1. **Melhoria no Teste Java**
+       - Mostre o trecho de código de teste otimizado.
+    2. **Dicas**
+       - Boas práticas em uso de annotations (@Before, @After), naming, estrutura.
+    3. **Assertivas Mais Específicas**
+       - Proponha exemplos de assert com matchers JUnit/TestNG.
+    4. **Considerações Adicionais**
+       - Refatorações, organização de pacotes, uso de Page Objects etc.
+    5. **Resumo**
+       - Breve síntese do que mudou e por quê.
+
+    Nada além dessas 5 seções.
+
+postman:
+  syntax_group: json
+  patterns: ['**/*.postman_collection.json']
+  output_sub: 'postman'
+  file_suffix: '.suggestion.txt'
+  prompt_tpl: |
+    Você é um especialista em QA de API usando Postman.
+
+    Com base nesta coleção JSON do Postman e mudanças recentes:
+
+    %{context}
+
+    Mudanças recentes:
+    %{diff}
+
+    **Entregue SOMENTE** as seções abaixo, exatamente nessa ordem:
+
+    1. **Melhoria na Coleção Postman**
+       - Mostre a estrutura reorganizada ou snippets de requests otimizados.
+    2. **Dicas**
+       - Uso de variáveis de ambiente, scripts de testes JS embutidos.
+    3. **Assertivas Mais Específicas**
+       - Exemplos de testes embutidos mais detalhados para respostas HTTP.
+    4. **Considerações Adicionais**
+       - Organização de pastas e boas práticas em pre-request scripts.
+    5. **Resumo**
+       - Breve síntese do que foi melhorado e por quê.
+
+    Nada além dessas 5 seções.

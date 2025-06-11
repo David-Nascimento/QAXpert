@@ -17,7 +17,7 @@ describe Qaxpert::QualityScorer do
       result = described_class.score_feature(feature)
 
       expect(result[:score]).to be >= 4.0
-      expect(result[:feedback]).to include("Excelente")
+      expect(result[:feedback]).to include('Excelente')
     end
 
     it 'retorna pontuação baixa para feature sem keywords válidas' do
@@ -31,7 +31,7 @@ describe Qaxpert::QualityScorer do
       result = described_class.score_feature(ruim)
 
       expect(result[:score]).to be <= 1.5
-      expect(result[:feedback]).to include("Fraco")
+      expect(result[:feedback]).to include('Fraco')
     end
 
     it 'detecta duplicação e penaliza' do

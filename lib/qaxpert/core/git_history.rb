@@ -1,14 +1,23 @@
 module QAxpert
   module Core
     class GitHistory
-      def self.extract_diff(repo_path)
+      #
+      # Retorna o diff entre dois pontos Git.
+      # Se `from_ref` ou `to_ref` não forem informados, usa HEAD~1 e HEAD.
+      #
+      # @param repo_path [String]
+      # @param from_ref  [String, nil]
+      # @param to_ref    [String, nil]
+      # @return [String]
+      #
+      def self.extract_diff(repo_path, from_ref: nil, to_ref: nil)
         Dir.chdir(repo_path) do
-          latest_diff = `git diff HEAD~1 HEAD`
-          return latest_diff.empty? ? "Nenhuma alteração detectada" : latest_diff
+          base = from_ref || 'HEAD~1'
+          alvo = to_ref   || 'HEAD'
+          `git diff --color=never #{base} #{alvo}`
         end
-      rescue => e
-        puts "[QAXpert] Erro ao extrair diff Git: #{e.message}"
-        return "Erro ao extrair diff"
+      rescue StandardError => e
+        "[QAxpert] Erro ao extrair diff: #{e.message}"
       end
     end
   end
