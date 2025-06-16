@@ -14,7 +14,7 @@ module QAxpert
         Dir.chdir(repo_path) do
           base = from_ref || 'HEAD~1'
           alvo = to_ref   || 'HEAD'
-          `git diff --color=never #{base} #{alvo}`
+         `git -C "#{repo_path}" diff --color=never #{base} #{alvo}`
         end
       rescue StandardError => e
         "[QAxpert] Erro ao extrair diff: #{e.message}"

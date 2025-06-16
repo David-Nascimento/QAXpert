@@ -1,0 +1,31 @@
+Melhoria no Gherkin:
+  Scenario Outline: Tentativa de login com diferentes credenciais
+    Given que o usuário está na página de login
+    When o usuário insere "<username>" no campo "nome de usuário"
+    And o usuário insere "<password>" no campo "senha"
+    And o usuário clica no botão "Entrar"
+    Then o resultado deve ser "<result>"
+
+    Examples:
+      | username        | password        | result                                             |
+      | usuario_valido  | senha_valida    | Redirecionado para o painel principal           |
+      | usuario_invalido| senha_qualquer  | Mensagem de erro "Nome de usuário ou senha inválidos." |
+      | usuario_valido  | senha_invalida  | Mensagem de erro "Nome de usuário ou senha inválidos." |
+      | ""              | ""              | Mensagem de erro "Por favor, preencha todos os campos." |
+
+Dicas:
+  - Use `Scenario Outline` para evitar duplicação de cenários.
+  - Mantenha os passos concisos e focados em ações do usuário.
+  - Use nomes claros e descritivos para campos e botões.
+
+Assertivas Mais Específicas:
+  - `Then o usuário deve ser redirecionado para o painel principal` -> `Then a URL deve ser "/painel"` e `E o elemento "mensagem-de-boas-vindas" deve estar visível`
+  - `Then o usuário deve ver a mensagem de erro "Nome de usuário ou senha inválidos."` -> `Then a mensagem de erro com o texto "Nome de usuário ou senha inválidos." deve estar visível dentro do elemento com id "mensagem-de-erro"`
+
+Considerações Adicionais:
+  - Use *fixtures* ou *factories* para criar usuários válidos previamente no banco de dados, evitando depender de dados inseridos diretamente nos cenários.
+  - Considere o uso de *mocks* ou *stubs* para isolar o sistema sob teste, principalmente se o login envolver serviços externos (ex: autenticação via API).
+  - Agrupe os passos em *steps* customizados (ex: `Dado que o usuário está logado com credenciais válidas`).
+
+Resumo:
+  Otimize o Gherkin com `Scenario Outline`, utilize asserts mais precisos e prepare o ambiente com *fixtures/factories*.  Considere o uso de *mocks/stubs* para isolar o componente em teste.

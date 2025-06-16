@@ -8,7 +8,7 @@ module QAxpert
       #
       # @param api_key [String] chave da OpenAI (ENV['OPENAI_API_KEY'])
       #
-      def initialize(api_key: ENV['OPENAI_API_KEY'])
+      def initialize(api_key: ENV.fetch('OPENAI_API_KEY', nil))
         @api_key = api_key
         return if @api_key && !@api_key.empty?
 

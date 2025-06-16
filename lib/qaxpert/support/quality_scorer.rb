@@ -1,32 +1,41 @@
+# lib/qaxpert/core/quality_scorer.rb
+
 module QAxpert
-  class QualityScorer
-    def self.score_feature(content)
-      score = 0.0
+  module Core
+    # Provides a simple quality scoring for feature or test snippets
+    class QualityScorer
+      # Scores a block of Gherkin or test code.
+      # @param text [String] the feature or test snippet
+      # @return [Hash] includes :score (Float) and :metrics (Hash)
+      def self.score_feature(text)
+        lines = text.to_s.lines.map(&:strip).reject(&:empty?)
+        metrics = {}
 
-      score += 1.0 if content.include?('Feature:')
-      score += 0.5 if content.match?(/^@\w+/)
+        # Count scenarios
+        scenario_count = lines.count { |l| l =~ /^Scenario/i }
+        metrics[:scenario_count] = scenario_count
 
-      scenarios = content.scan(/Scenario:/i)
-      score += 1.0 if scenarios.any?
+        # Count steps (Given, When, Then, And)
+        step_keywords = %w[Given When Then And But]
+        step_count = lines.count { |l| step_keywords.any? { |kw| l.start_with?(kw) } }
+        metrics[:step_count] = step_count
 
-      steps = content.scan(/^\s*(Given|When|Then|And|But)/i)
-      score += 1.0 if steps.size.between?(3, 15)
+        # Assess coverage: at least one scenario and >=3 steps per scenario
+        ideal_steps = scenario_count * 3
+        coverage_ratio = ideal_steps.zero? ? 0.0 : [step_count.to_f / ideal_steps, 1.0].min
+        metrics[:coverage_ratio] = coverage_ratio.round(2)
 
-      duplicates = steps.map(&:first).tally.select { |_k, v| v > 1 }
-      score += 0.5 if duplicates.empty?
+        # Evaluate specificity: penalize generic placeholders
+        generic_terms = %w["nome de usuário" "senha" "título" "descrição" "preço"]
+        generic_count = generic_terms.sum { |term| text.include?(term) ? 1 : 0 }
+        metrics[:generic_count] = generic_count
 
-      {
-        score: score.round(2),
-        feedback: generate_feedback(score)
-      }
-    end
+        # Compute a base score: coverage (0..1) minus generic penalty
+        score = (coverage_ratio * 5) - (generic_count * 0.5)
+        # Normalize between 0 and 5
+        score = [[score, 0.0].max, 5.0].min
 
-    def self.generate_feedback(score)
-      case score
-      when 0..1.5 then 'Fraco — cenário precisa ser reestruturado.'
-      when 1.6..3.0 then 'Regular — melhorias recomendadas.'
-      when 3.1..4.0 then 'Bom — cobertura adequada.'
-      else 'Excelente — segue boas práticas de escrita BDD!'
+        { score: score.round(2), metrics: metrics }
       end
     end
   end

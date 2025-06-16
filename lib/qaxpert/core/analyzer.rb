@@ -35,7 +35,7 @@ module QAxpert
 
         # Se dry_run, apenas lista arquivos e sai
         if dry_run
-          patterns = QAxpert::LanguageHandler.load_config![@lang]['patterns']
+          patterns = QAxpert::Languages::LanguageHandler.load_config![@lang]['patterns']
           discoverer = QAxpert::Services::FileDiscoverer.new(repo_path: repo_path, patterns: patterns)
           files = discoverer.discover
           puts 'Arquivos que seriam analisados (dry-run):'
@@ -49,7 +49,7 @@ module QAxpert
                     else raise "Provedor de IA não suportado: #{ai_provider.inspect}"
                     end
 
-        handler = QAxpert::LanguageHandler.new(
+        handler = QAxpert::Languages::LanguageHandler.new(
           lang: @lang,
           repo_path: repo_path,
           output_base: output_path,
@@ -62,10 +62,16 @@ module QAxpert
         # Ajustar handler para receber verbose (precisaremos propagar)
         handler.verbose = true if handler.respond_to?(:verbose=) && handler.respond_to?(:verbose=) && verbose
 
-        files = handler.analyze_all
+        result = handler.analyze_all
+        files = case result
+                when Hash then result.values.flatten
+                when Array then result
+                else Array(result)
+                end
 
-        output_sub = handler.instance_variable_get(:@config)['output_sub']
-        puts "[QAxpert] Análise concluída (#{files.count} arquivos). Saída em: #{output_path}/#{output_sub}"
+        config = QAxpert::Languages::LanguageHandler.load_config![@lang.to_sym]
+        output_path = config['output_base']
+        puts "[QAxpert] Análise concluída (#{files.count} arquivos). Saída em: #{output_path}" if verbose
         files
       end
     end

@@ -1,90 +1,118 @@
 module QAxpert
-  class LanguageHandler
-    attr_accessor :diff_override, :verbose
+  module Languages
+    # Enhanced LanguageHandler with parallel file processing and robust file discovery.
+    class LanguageHandler
+      attr_accessor :diff_override, :verbose
 
-    CONFIG_PATH = File.expand_path('../../../config/languages.yml', __dir__)
+      def initialize(lang:, repo_path:, output_base:, ai_client:, threads: nil)
+        self.class.load_config!
+        @config_map = self.class.load_config!
+        @requested  = normalize_requested_langs(lang, @config_map.keys)
 
-    def self.load_config!
-      return @config_map if @config_map
-      raise "Arquivo de configuração não encontrado: #{CONFIG_PATH}" unless File.exist?(CONFIG_PATH)
+        @repo_path   = repo_path
+        @output_base = output_base
+        @ai_client   = ai_client
+        @threads     = threads || Parallel.processor_count
 
-      raw = YAML.load_file(CONFIG_PATH)
-      @config_map = raw.transform_keys(&:to_sym)
-    end
+        @diff_override = nil
+        @verbose       = false
+        @@processed_groups ||= Set.new
+      end
 
-    def initialize(lang:, repo_path:, output_base:, ai_client:)
-      self.class.load_config!
+      # Performs analysis for each configured language/framework
+      # @return [Hash{Symbol=>Array<String>}] processed files per language
+      def analyze_all
+        results = {}
 
-      @lang       = lang
-      @repo_path  = repo_path
-      @output_base = output_base
-      @ai_client  = ai_client
-      @config     = self.class.instance_variable_get(:@config_map)[lang]
-      raise "Linguagem/framework #{lang.inspect} não configurado em #{CONFIG_PATH}" if @config.nil?
+        @requested.each do |lang_sym|
+          cfg = @config_map[lang_sym]
+          raise "Language #{lang_sym} not configured" unless cfg
 
-      @output_dir = File.join(output_base, @config['output_sub'])
-      FileUtils.mkdir_p(@output_dir)
+          # Prepare output directory
+          output_dir = File.join(@output_base, cfg['output_sub'])
+          FileUtils.mkdir_p(output_dir)
 
-      @discoverer     = QAxpert::Services::FileDiscoverer.new(repo_path: @repo_path, patterns: @config['patterns'])
-      @prompt_builder = QAxpert::Services::PromptBuilder.new(template: @config['prompt_tpl'])
-      @result_saver   = QAxpert::Services::ResultSaver.new(output_dir: @output_dir, file_suffix: @config['file_suffix'])
-      @cache_manager  = QAxpert::Services::CacheManager.new(output_dir: @output_dir,
-                                                            file_suffix: @config['file_suffix'])
+          # Initialize services
+          prompt_builder = QAxpert::Services::PromptBuilder.new(cfg['prompt_tpl'])
+          result_saver   = QAxpert::Services::ResultSaver.new(output_dir: output_dir,
+                                                            file_suffix: cfg['file_suffix'])
+          cache_manager  = QAxpert::Services::CacheManager.new(output_dir: output_dir,
+                                                              file_suffix: cfg['file_suffix'])
 
-      @diff_override = nil
-      @verbose       = false
-    end
+          # Robust file discovery relative to repo_path
+          files = discover_files(@repo_path, cfg['patterns'])
 
-    def analyze_all
-      test_files = @discoverer.discover
-      analysis_results = []
+          # Parallel processing of files
+          entries = Parallel.map(files, in_threads: @threads) do |file|
+            content = File.read(file)
+            diff    = @diff_override || extract_diff
+            prompt  = prompt_builder.build(
+              context:      content,
+              diff:         diff,
+              file_path:    file,
+              scenario_name: File.basename(file)
+            )
 
-      test_files.each do |file|
-        puts "Analisando: #{file}"
+            response, from_cache = cache_manager.fetch_or_store(file) do
+              @ai_client.call(prompt)
+            end
+            result_saver.save(source_file: file, response: response)
 
-        content = File.read(file)
-        diff    = @diff_override || extract_diff
-        prompt  = @prompt_builder.build(diff: diff, context: content)
+            { file: file, suggestion: cache_manager.send(:cache_path_for, file) }
+          rescue StandardError => e
+            warn "[LanguageHandler][#{lang_sym}] Error processing #{file}: #{e.message}"
+            nil
+          end.compact
 
-        puts "\n[Verbose] Prompt para #{file}:\n#{prompt}\n\n" if @verbose
+          # Generate report once per syntax group
+          group = cfg['syntax_group'] || lang_sym
+          unless @@processed_groups.include?(group)
+            group_dir = File.join(File.dirname(output_dir), group.to_s)
+            FileUtils.mkdir_p(group_dir)
+            QAxpert::Core::Reporter.save(output_dir: group_dir,
+                                        report_data: entries)
+            @@processed_groups << group
+          end
 
-        response, from_cache = @cache_manager.fetch_or_store(file) do
-          @ai_client.call(prompt)
+          results[lang_sym] = entries.map { |e| e[:file] }
         end
-        analysis_results << { file: file, response: response }
 
-        saved_path = File.join(@output_dir, "#{File.basename(file, '.*')}#{@config['file_suffix']}")
-        puts from_cache ? "Carregado do cache: #{saved_path}" : "Nova chamada à IA; resposta salva em: #{saved_path}"
+        results
       end
 
-      # --- Novo código: gera apenas um relatório por grupo syntax_group ---
-      @@processed_groups ||= Set.new
-      @syntax_group ||= @config['syntax_group'] || @lang
+      private
 
-      unless @@processed_groups.include?(@syntax_group)
-        group_dir = File.join(File.dirname(@output_dir), @syntax_group)
-        FileUtils.mkdir_p(group_dir)
-
-        QAxpert::Core::Reporter.save(
-          output_dir: group_dir,
-          analysis_data: analysis_results
-        )
-
-        @@processed_groups << @syntax_group
-      else
-        puts "[LanguageHandler] Relatório para grupo '#{@syntax_group}' já gerado, pulando."
+      # Discover files by patterns, relative to base_dir
+      def discover_files(base_dir, patterns)
+        patterns.flat_map do |pat|
+          Dir.glob(File.join(base_dir, pat), File::FNM_CASEFOLD)
+        end
+        .uniq
+        .select { |f| File.file?(f) }
       end
-      # ----------------------------------------------------------------------
 
-      test_files
-    end
+      def extract_diff
+        QAxpert::Core::GitHistory.extract_diff(@repo_path)
+      rescue StandardError
+        ''
+      end
 
-    private
+      def normalize_requested_langs(lang_param, available)
+        if lang_param.nil? || lang_param.to_s.downcase == 'all'
+          available
+        else
+          Array(lang_param).map(&:to_sym)
+        end
+      end
 
-    def extract_diff
-      QAxpert::Core::GitHistory.extract_diff(@repo_path)
-    rescue StandardError
-      ''
+      # Loads config from YAML only once
+      def self.load_config!
+        return @config_map if @config_map
+        cfg_path = File.expand_path('../../../config/languages.yml', __dir__)
+        raise "Config file not found: #{cfg_path}" unless File.exist?(cfg_path)
+        raw = YAML.load_file(cfg_path)
+        @config_map = raw.transform_keys(&:to_sym)
+      end
     end
   end
 end

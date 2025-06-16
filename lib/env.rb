@@ -29,11 +29,12 @@ require 'yaml'
 require 'erb'
 require 'securerandom'
 require 'set'
+require 'parallel'
 
+Dotenv.load(File.join(root, '.env')) if File.exist?(File.join(root, '.env'))
 require 'qaxpert/cli'
 require 'qaxpert/support/parser'
 require 'qaxpert/AI/ai_generator'
-require 'qaxpert/Integrations/gemini_client'
 require 'qaxpert/Utils/utils'
 require 'qaxpert/support/quality_scorer'
 require 'qaxpert/support/coverage_analyzer'
@@ -49,9 +50,8 @@ require 'qaxpert/clients/llm_client_interface'
 require 'qaxpert/clients/openai_client'
 require 'qaxpert/clients/gemini_client'
 
-
 # Serviços auxiliares
 require 'qaxpert/services/file_discoverer'
 require 'qaxpert/services/prompt_builder'
 require 'qaxpert/services/result_saver'
-require 'qaxpert/services/cache_manager' 
+require 'qaxpert/services/cache_manager'

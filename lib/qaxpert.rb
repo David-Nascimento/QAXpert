@@ -16,7 +16,7 @@ module QAxpert
             dry_run: false, verbose: false)
       abort("❌ O caminho do repositório não existe: #{repo_path}") unless repo_path && Dir.exist?(repo_path)
 
-      supported = QAxpert::LanguageHandler.load_config!.keys
+      supported = QAxpert::Languages::LanguageHandler.load_config!.keys
       unless supported.include?(lang)
         abort("❌ Tipo inválido: #{lang.inspect}. Use um dos valores: #{supported.join(', ')}")
       end

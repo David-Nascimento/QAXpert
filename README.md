@@ -6,128 +6,137 @@
 [![RSpec Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/seuusuario/qaxpert/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-QAXpert é uma ferramenta CLI que gera automaticamente sugestões de cenários de testes BDD com base no código-fonte Ruby e contexto de negócio, com suporte a integração Git, cobertura, Jira e análise de qualidade.
+# QAxpert
+
+Gerador de relatórios de qualidade de testes automatizados, com IA, cache e execução paralela.
 
 ---
 
-## 🚀 Instalação
+## Instalação
+
+Via RubyGems:
 
 ```bash
-# Clone o repositório
-$ git clone https://github.com/seuusuario/qaxpert.git
-$ cd qaxpert
-
-# Instale as dependências
-$ bundle install
-
-# Configure as chaves da API Gemini e Jira
-$ cp .env.example .env
-$ nano .env
+gem install qaxpert
 ```
 
-### .env esperado:
-```env
-GEMINI_API_KEY=xxxx
-JIRA_BASE_URL=https://seu-projeto.atlassian.net
-JIRA_EMAIL=seu@email.com
-JIRA_API_TOKEN=sua_token
-```
+Via Bundler/Gemfile:
 
-```bash
-# Instale localmente como uma gem (requer Ruby no PATH)
-$ gem build qaxpert.gemspec
-$ gem install ./qaxpert-0.1.0.gem
-```
-
-> Se estiver no Windows e `qaxpert` não for reconhecido, rode via:
-> `ruby bin/qaxpert ...` ou `./bin/qaxpert ...`
-
----
-
-## 🧪 Comandos disponíveis
-
-### ➤ Analisar código Ruby diretamente:
-```bash
-qaxpert analyze path/to/arquivo.rb
-```
-
-### ➤ Analisar último commit (Git):
-```bash
-qaxpert analyze-git
-```
-
-### ➤ Gerar testes com base na issue da branch atual (Jira):
-```bash
-qaxpert analyze-jira
-```
-
-### ➤ Analisar cobertura de testes (SimpleCov):
-```bash
-qaxpert analyze-coverage
-```
-
-### ➤ Avaliar qualidade de cenários `.feature`:
-```bash
-qaxpert score features/login.feature
+```ruby
+gem 'qaxpert', path: '.'
 ```
 
 ---
 
-## 📂 Estrutura do Projeto
+## Uso CLI
 
-- `lib/qaxpert/parser.rb`: extrai informações do código Ruby.
-- `lib/qaxpert/ai_generator.rb`: monta o prompt e chama a IA.
-- `lib/qaxpert/git_analyzer.rb`: detecta arquivos alterados via Git.
-- `lib/qaxpert/integrations/jira_client.rb`: integra com Jira.
-- `lib/qaxpert/coverage_analyzer.rb`: avalia linhas não testadas.
-- `lib/qaxpert/quality_scorer.rb`: gera pontuação de qualidade dos testes.
-- `lib/qaxpert/cli.rb`: comanda a lógica de execução.
+```bash
+bin/analyze_by_type --type cucumbeR --path ./test_projects/sample_ruby_test --ai gemini
+```
+
+* `--type`, `-t`: nome da stack (ex.: `cucumber`, `junit`, `robot`)
+* `--path`, `-p`: caminho até a pasta com testes ou repositório
+* `--ai`, `-a`: provedor de IA (`openai` ou `gemini`)
+* `--threads`, `-T` (opcional): número de threads para paralelismo (padrão: CPUs disponíveis)
+
+Exemplo com threads:
+
+```bash
+bin/analyze_by_type -t cucumber -p ./tests -a openai -T 4
+```
 
 ---
 
-## ✅ Rodar testes do projeto
+## Cache
+
+Permite armazenar respostas de IA e expirar após um tempo configurável.
+
+No `config/languages.yml`, adicione opcionalmente:
+
+```yaml
+cucumber:
+  syntax_group: gherkin
+  patterns: ['**/*.feature']
+  output_sub: 'gherkin'
+  file_suffix: '.suggestion.txt'
+  cache_ttl: 3600  # TTL em segundos (1 hora)
+  prompt_tpl: |
+    ...
+```
+
+No código, o `CacheManager` será inicializado com:
+
+```ruby
+CacheManager.new(
+  output_dir: output_dir,
+  file_suffix: cfg['file_suffix'],
+  ttl: cfg['cache_ttl']
+)
+```
+
+---
+
+## Paralelismo
+
+O `LanguageHandlerParallel` usa múltiplas threads para acelerar a análise:
 
 ```bash
-bundle exec rspec
+bin/analyze_by_type --type junit --path ./src --ai openai --threads 8
 ```
 
-## Estrutura do Projeto
-```
-qaxpert/
-├── bin/
-│   └── qaxpert                # CLI executável
-├── lib/
-│   └── qaxpert/
-│       ├── core/
-│       │   ├── analyzer.rb          # Lógica de análise comum
-│       │   ├── git_history.rb       # Interpretação de commits/mudanças
-│       │   ├── llm_client.rb        # Cliente para OpenAI/Gemini
-│       │   ├── prompt_generator.rb  # Gera prompts baseados em linguagem
-│       │   └── reporter.rb          # Gera relatórios e saídas
-│       ├── languages/
-│       │   ├── ruby.rb              # Suporte à linguagem Ruby
-│       │   ├── java.rb              # Suporte à linguagem Java (JUnit, TestNG, Selenium, RestAssured)
-│       │   ├── flutter.rb           # Suporte à linguagem Flutter/Dart
-│       │   ├── robot.rb             # Suporte ao Robot Framework
-│       │   ├── karate.rb            # Suporte ao Karate DSL
-│       │   ├── postman.rb           # Suporte a coleções Postman
-│       │   └── rest.rb              # Suporte a testes REST (HTTParty, etc)
-│       └── qaxpert.rb              # Inicializador principal
-├── adapters/
-│   ├── java/                  # Scripts auxiliares (build, cobertura, etc.)
-│   │   └── run_tests.sh
-│   └── flutter/
-│       └── run_tests.sh
-├── test_projects/             # Projetos de teste para validação
-│   ├── sample_java_app/
-│   ├── sample_flutter_app/
-│   ├── sample_robot_tests/
-│   ├── sample_karate_tests/
-│   ├── sample_postman/
-│   └── sample_rest_api/
-├── README.md
-├── Gemfile
-└── qaxpert.gemspec
+---
+
+## Relatórios
+
+Após a execução, em `qaxpert_output/` você encontrará, por grupo de linguagem:
+
+* **report.csv**: planilha com cenários originais, sugestões, scores e seções
+* **report.html**: relatório web responsivo, comparativo de cenários
+* **report.txt**: versão texto simples, fácil visualização
+
+---
+
+## Publicação da Gem
+
+1. Atualize a versão em `qaxpert.gemspec`:
+
+   ```ruby
+   spec.version = 'x.y.z'
+   ```
+2. Gere o CHANGELOG:
+
+   ```bash
+    git log --pretty=format:'\* %h %s' --no-merges > CHANGELOG.md
+   ```
+
+3. Build & push:
+
+   ```bash
+    gem build qaxpert.gemspec
+    gem push qaxpert-x.y.z.gem
+    ```
+
+---
+
+## Integração CI
+
+Adicione um workflow em `.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+on: [push, pull_request]
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.7'
+      - run: gem install bundler
+      - run: bundle install --jobs 4 --retry 3
+      - run: bundle exec rspec
+      - run: bundle exec rubocop
 ```
 
 ---

@@ -1,4 +1,3 @@
-require 'rspec'
 require_relative '../lib/qaxpert/support/parser'
 
 describe Qaxpert::Parser do

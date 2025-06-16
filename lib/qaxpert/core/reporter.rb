@@ -1,136 +1,77 @@
+# lib/qaxpert/core/report_txt_generator.rb
 module QAxpert
   module Core
+    # Generates a clean, readable .txt report following AI suggestion style
     class Reporter
-      # Remove fences e markdown
-      def self.clean_text(text)
-        text.to_s.gsub(/```(?:gherkin)?/, '').gsub(/```/, '').gsub(/`/, '').strip
-      end
+      SECTIONS = [
+        'Gherkin Otimizado',
+        'Dicas',
+        'Assertivas Mais Específicas',
+        'Considerações Adicionais',
+        'Resumo'
+      ].freeze
 
-      # Extrai blocos completos de Gherkin, preservando novas linhas
-      def self.extract_scenarios(text)
-        return [] unless text.is_a?(String) && !text.strip.empty?
-        blocks = text.scan(/```(?:gherkin)?\s*\n([\s\S]*?)```/im).flatten
-        source = blocks.any? ? blocks.join("\n") : text
-        source.scan(/^\s*Scenario(?: Outline)?:.*?(?=^\s*Scenario(?: Outline)?:|\z)/im)
-              .map { |blk| clean_text(blk) }
-      end
-
-      # Extrai seções de texto após cabeçalho markdown
-      def self.extract_section(text, header)
-        return [] unless text.include?(header)
-        regex = /\*\*#{Regexp.escape(header)}(?: [^*]*)?\*\*\s*([\s\S]*?)(?=\n\d+\.|\z)/im
-        match = text.match(regex)
-        return [] unless match
-        match[1].lines.map(&:strip).reject(&:empty?).map { |l| clean_text(l) }
-      end
-
-      def self.save(output_dir:, analysis_data:)
-        # CSV
-        csv_path = File.join(output_dir, 'report.csv')
-        headers = %w[Cenario Original Novo Score_Origem Score_Novo Dicas Assertivas Consideracoes]
-        CSV.open(csv_path, 'w', write_headers: true, headers: headers) do |csv|
-          analysis_data.each do |entry|
-            file = entry[:file]
-            ia_text = entry[:response].to_s
-            file_text = File.read(file) rescue ''
-
-            orig_list = extract_scenarios(file_text)
-            new_list  = extract_scenarios(ia_text)
-            dicas = extract_section(ia_text, 'Dicas')
-            assertivas = extract_section(ia_text, 'Assertivas Mais Específicas')
-            consideracoes = extract_section(ia_text, 'Considerações Adicionais')
-
-            orig_list.each_with_index do |scenario, idx|
-              # Title apenas nome do cenário
-              title = scenario.sub(/^Scenario(?: Outline)?:\s*/i, '').strip
-              newc = new_list[idx] || ''
-              os = QualityScorer.score_feature(scenario)[:score]
-              ns = newc.empty? ? 0.0 : QualityScorer.score_feature(newc)[:score]
-
-              csv << [
-                title,
-                scenario,  # bloco completo
-                newc,      # novo cenário
-                os,
-                ns,
-                dicas.join(' '),
-                assertivas.join(' '),
-                consideracoes.join(' ')
-              ]
+      # @param output_dir [String] directory where report.txt will be saved
+      # @param report_data [Array<Hash>] each hash must have :file and :suggestion paths
+      def self.save(output_dir:, report_data:)
+        path = File.join(output_dir, 'report.txt')
+        File.open(path, 'w') do |f|
+          report_data.each do |entry|
+            sugg_text = begin
+              File.read(entry[:suggestion])
+            rescue StandardError
+              ''
             end
+
+            # Clean and split by sections
+            sections_content = extract_all_sections(sugg_text)
+
+            # Write each section in order
+            SECTIONS.each do |header|
+              f.puts "#{header}:"
+              content = sections_content[header] || []
+              content.each do |line|
+                f.puts "  #{line.strip}"
+              end
+              f.puts # blank line
+            end
+            f.puts '-' * 60
+            f.puts # separate entries
           end
         end
-        puts "[Reporter] CSV salvo em: #{csv_path}"
+        puts "[Reporter] TXT report generated at: #{path}"
+      end
 
-        # HTML seções expansíveis
-        html_path = File.join(output_dir, 'report.html')
-        grouped = analysis_data.group_by { |e| File.basename(e[:file]) }
-        sections = grouped.map do |feature, entries|
-          cards = entries.flat_map do |entry|
-            file_text = File.read(entry[:file]) rescue ''
-            ia_text = entry[:response].to_s
-            orig_list = extract_scenarios(file_text)
-            new_list  = extract_scenarios(ia_text)
-            dicas = extract_section(ia_text, 'Dicas')
-            assertivas = extract_section(ia_text, 'Assertivas Mais Específicas')
-            consideracoes = extract_section(ia_text, 'Considerações Adicionais')
+      def self.extract_all_sections(text)
+        cleaned = text.to_s
+                      .gsub(/```[\s\S]*?```/, '')
+                      .gsub(/^(?:\+\+\+|---|@@).*$/, '')
 
-            orig_list.each_with_index.map do |scenario, idx|
-              title = scenario.sub(/^Scenario(?: Outline)?:\s*/i, '').strip
-              newc = new_list[idx] || ''
-              os = QualityScorer.score_feature(scenario)[:score]
-              ns = newc.empty? ? 0.0 : QualityScorer.score_feature(newc)[:score]
+        cleaned = cleaned.gsub(/^\s*#.*$/, '') # remove comments
+        cleaned = cleaned.gsub(/^\s*$/, '') # remove empty lines
+        cleaned = cleaned.gsub(/^\s*[-=]+\s*$/, '') # remove lines with just dashes or equals
+        cleaned = cleaned.gsub(/^\s*[*-]\s+/, '') # remove bullet points
+        cleaned = cleaned.gsub('*', '') # remove asterisks
 
-              <<~CARD
-                <div class="scenario-card">
-                  <h3>Scenario: #{ERB::Util.html_escape(title)}</h3>
-                  <pre class="wrap">#{ERB::Util.html_escape(scenario)}</pre>
-                  <pre class="wrap new">#{ERB::Util.html_escape(newc)}</pre>
-                  <p><span class="score-orig">Score Origem: #{os}</span> | <span class="score-new">Score Novo: #{ns}</span></p>
-                  <p>Dicas: #{ERB::Util.html_escape(dicas.join(' '))}</p>
-                  <p>Assertivas: #{ERB::Util.html_escape(assertivas.join(' '))}</p>
-                  <p>Considerações: #{ERB::Util.html_escape(consideracoes.join(' '))}</p>
-                </div>
-              CARD
-            end
-          end.join
+        SECTIONS.each_with_object({}) do |header, result|
+          result[header] = extract_section(cleaned, header)
+        end
+      rescue StandardError => e
+        puts "[Reporter] Error processing sections: #{e.message}"  
+      end
 
-          <<~SECTION
-            <details class="feature-section" open>
-              <summary>Feature: #{ERB::Util.html_escape(feature)}</summary>
-              #{cards}
-            </details>
-          SECTION
-        end.join
+      def self.extract_section(text, header)
+        # Regex: header line, then capture until next header or end
+        pattern = /
+          ^\s*#{Regexp.escape(header)}\s*[:\-]?\s*$\n    # linha exata de cabeçalho (sem asteriscos)
+          (.*?)(?=^\s*(?:#{SECTIONS.map(&Regexp.method(:escape)).join('|')})\s*[:\-]?\s*$|\z)
+        /imx
+        match = text.match(pattern)
+        return [] unless match
 
-        html = <<~HTML
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Relatório QAxpert</title>
-            <style>
-              body { font-family: Arial; margin:20px; background:#f4f4f9; }
-              h1 { color:#333; }
-              details { margin-bottom:15px; }
-              summary { background:#1976D2; color:white; padding:8px; font-size:1.1em; cursor:pointer; border-radius:4px; }
-              .scenario-card { background:white; margin:10px 0; padding:10px; border-left:4px solid #4CAF50; border-radius:4px; }
-              .scenario-card h3 { margin:0; color:#1976D2; }
-              .wrap { padding:8px; background:#e8f0fe; border-radius:4px; white-space: pre-wrap; }
-              .wrap.new { background:#fff3e0; }
-              .score-orig { color:#388E3C; }
-              .score-new { color:#D32F2F; }
-            </style>
-          </head>
-          <body>
-            <h1>Relatório QAxpert</h1>
-            #{sections}
-          </body>
-          </html>
-        HTML
-        File.write(html_path, html)
-        puts "[Reporter] HTML salvo em: #{html_path}"
+        match[1].lines.map(&:strip).reject(&:empty?)
+      rescue RegexpError => e
+        puts "[Reporter] Error processing section '#{header}': #{e.message}"
       end
     end
   end

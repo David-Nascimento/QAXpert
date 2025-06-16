@@ -3,29 +3,59 @@ require_relative '../lib/qaxpert'
 
 require 'optparse'
 
-options = { from: nil, to: nil, dry_run: false, verbose: false }
-OptionParser.new do |opts|
-  opts.banner = "Usage: analyze_by_type --type=TYPE [--path=PATH] [--output=DIR] [--ai=PROVIDER] [--from=REF] [--to=REF] [--dry-run] [--verbose]"
 
-  opts.on("--type=TYPE",   "Tipo de framework de teste (ruby, java, postman, karate, robot, rest)") { |v| options[:type] = v.to_sym }
-  opts.on("--path=PATH",   "Caminho do projeto (default: diretório atual)")                   { |v| options[:path] = v }
-  opts.on("--output=DIR",  "Diretório de saída (default: ./qaxpert_output)")                  { |v| options[:output] = v }
-  opts.on("--ai=PROVIDER", "Provedor de IA (openai ou gemini)")                                { |v| options[:ai] = v.to_sym }
-  opts.on("--from=REF",    "Git ref de origem para diff (ex: main, HEAD~1)")                    { |v| options[:from] = v }
-  opts.on("--to=REF",      "Git ref alvo para diff (ex: feature-branch, HEAD)")                 { |v| options[:to] = v }
-  opts.on("--dry-run",     "Apenas lista os arquivos que seriam analisados, sem chamar a IA")    { options[:dry_run] = true }
-  opts.on("--verbose",     "Exibe prompts gerados ou ações detalhadas no console")              { options[:verbose] = true }
-end.parse!
+options = {
+  type: nil,
+  path: nil,
+  ai: nil
+}
 
-abort("❌ Você precisa informar o tipo com --type") unless options[:type]
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: analyze_by_type --type TYPE --path PATH --ai AI_PROVIDER"
 
-QAxpert.run(
-  repo_path:   options[:path]   || Dir.pwd,
-  lang:        options[:type],
-  output_path: options[:output] || './qaxpert_output',
-  ai_provider: options[:ai]     || :openai,
-  from_ref:    options[:from],
-  to_ref:      options[:to],
-  dry_run:     options[:dry_run],
-  verbose:     options[:verbose]
+  opts.on('-tTYPE', '--type=TYPE', 'Test stack (e.g. cucumber, junit)') do |t|
+    options[:type] = t.to_sym
+  end
+
+  opts.on('-pPATH', '--path=PATH', 'Path to repository or tests folder') do |p|
+    options[:path] = p
+  end
+
+  opts.on('-aAI', '--ai=AI', 'AI provider (openai or gemini)') do |a|
+    options[:ai] = a.to_sym
+  end
+
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end
+
+begin
+  parser.parse!
+  missing = [:type, :path, :ai].select { |k| options[k].nil? }
+  unless missing.empty?
+    puts "Missing required options: #{missing.join(', ')}"
+    puts parser
+    exit 1
+  end
+rescue OptionParser::InvalidOption => e
+  warn e.message
+  puts parser
+  exit 1
+end
+
+# Prepare output directory
+output_dir = File.join('qaxpert_output', options[:type].to_s)
+FileUtils.rm_rf(output_dir)
+FileUtils.mkdir_p(output_dir)
+
+# Run analysis
+analyzer = QAxpert::Core::Analyzer.new(options[:type])
+files = analyzer.analyze(
+  options[:path],
+  output_dir,
+  options[:ai]
 )
+
+puts "Analysis completed: #{files.count} files processed. Output in: #{output_dir}"

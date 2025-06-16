@@ -1,22 +1,23 @@
 require 'rake'
-require_relative './lib/qaxpert'
+require_relative 'lib/qaxpert'
 
-namespace :qaxpert do
-  desc 'Executa análise para o tipo de teste informado'
-  task :analyze, [:type, :path, :output, :ai] do |_t, args|
-    args.with_defaults(
-      path: Dir.pwd,
-      output: './qaxpert_output',
-      ai: 'openai'
-    )
+# Exemplo de uso:
+#   rake analyze TYPE=cucumber PATH=features AI=openai
+#   rake test
+#   rake build
 
-    puts "[QAXpert] Analisando tipo: #{args[:type]}"
+desc 'Analisa o projeto. Variáveis de ambiente: TYPE, PATH, AI'
+task :analyze do
+  type = ENV.fetch('TYPE', nil) or raise 'Por favor informe TYPE (ex: cucumber, junit, robot)'
+  path = ENV.fetch('FEATURE_PATH', nil) or raise 'Por favor informe PATH para os testes'
+  ai   = ENV.fetch('AI', nil)   or raise 'Por favor informe AI (openai ou gemini)'
 
-    QAxpert.run(
-      repo_path: args[:path],
-      lang: args[:type].to_sym,
-      output_path: args[:output],
-      ai_provider: args[:ai].to_sym
-    )
-  end
+  output = File.join('qaxpert_output', type)
+  FileUtils.rm_rf(output)
+  FileUtils.mkdir_p(output)
+
+  puts "[QAxpert] Iniciando análise: type=#{type}, path=#{path}, ai=#{ai}"
+  analyzer = QAxpert::Core::Analyzer.new(type.to_sym)
+  files = analyzer.analyze(path, output, ai.to_sym)
+  puts "[QAxpert] Análise concluída: #{files.count} arquivos processados. Saída em: #{output}"
 end

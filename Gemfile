@@ -11,4 +11,4 @@ group :test do
   gem 'rspec'
 end
 
-gem "solargraph", "~> 0.52.0", :group => :development
+gem 'solargraph', '~> 0.52.0', group: :development

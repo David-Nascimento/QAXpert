@@ -12,7 +12,8 @@ Gem::Specification.new do |spec|
   spec.files         = Dir['lib/**/*.rb'] + ['bin/qaxpert']
   spec.require_paths = ['lib']
 
-  spec.add_runtime_dependency 'dotenv'
-  spec.add_runtime_dependency 'json'
+  spec.add_dependency 'dotenv'
+  spec.add_dependency 'json'
   spec.add_development_dependency 'rspec'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 end

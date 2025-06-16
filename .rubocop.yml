@@ -1,14 +1,16 @@
-inherit_from: .rubocop_todo.yml
+inherit_from:
+  - .rubocop_todo.yml
 
 AllCops:
+  SuggestExtensions: false
   NewCops: enable
   TargetRubyVersion: 2.7
+  Include:
+    - "**/*.rb"
+    - "features/**/*.rb"
   Exclude:
-    - 'bin/**/*'
-    - 'config/**/*'
-    - 'db/**/*'
-    - 'vendor/**/*'
-    - 'node_modules/**/*'
+    - "db/schema.rb"
+    - "node_modules/**/*"
 
 Layout/LineLength:
   Max: 120
@@ -18,25 +20,32 @@ Metrics/BlockLength:
     - 'bin/**'
     - 'lib/qaxpert/languages/language_handler.rb' # se for muito longo, ajuste depois
 
-# Desabilita cops que costumam gerar falsos positivos num projeto de CLI
-Style/Documentation:
+
+# Desabilita só o cop que está falhando
+Style/SafeNavigation:
   Enabled: false
-
-Style/FrozenStringLiteralComment:
-  Enabled: false
-
-Metrics/MethodLength:
-  Max: 25
-
-Metrics/AbcSize:
-  Max: 20
-
-Lint/UselessAssignment:
+  
+# Máximo de linhas em branco consecutivas em qualquer lugar
+Layout/EmptyLines:
   Enabled: true
+  Max: 1
 
-# Exemplo de configuração individual
-Gemspec/AddRuntimeDependency:
+# Linhas em branco antes e depois do *corpo* de métodos
+Layout/EmptyLinesAroundMethodBody:
   Enabled: true
+  Max: 1
 
-Layout/SpaceBeforeBrackets:
+# Linhas em branco após guard clauses (return, next, break)
+Layout/EmptyLineAfterGuardClause:
   Enabled: true
+  Max: 1
+
+# Linhas em branco após condições multilinha (if, unless, etc.)
+Layout/EmptyLineAfterMultilineCondition:
+  Enabled: true
+  Max: 1
+
+# (Opcional) Linhas em branco ao redor do corpo de classes
+Layout/EmptyLinesAroundClassBody:
+  Enabled: true
+  Max: 1
